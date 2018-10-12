@@ -1,0 +1,1 @@
+# obj: rust project for intel object module files
