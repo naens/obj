@@ -17,9 +17,63 @@ pub fn theadr(orec: ObjectRecord) {
 
 pub fn coment(orec: ObjectRecord) { tmp(orec) }
 pub fn modend(orec: ObjectRecord) { tmp(orec) }
-pub fn extdef(orec: ObjectRecord) { tmp(orec) }
+
+pub fn extdef(orec: ObjectRecord) {
+    println!("External Names Definition Record (EXTDEF)");
+    println!("=========================================");
+    let mut p = &orec.data[..];
+    while !p.is_empty() {
+        let length = p[0] as usize;
+        let str = &p[0..length+1];
+        let type_index = p[length+1] as usize;
+        let name = str::from_utf8(&str[1..]).unwrap();
+        print!("Name: {}", name);
+        if type_index > 0 {
+            print!(", type index: {}", type_index);
+        }
+        println!();
+        p = &p[length+2..];
+    }
+    println!();
+}
+
 pub fn typdef(orec: ObjectRecord) { tmp(orec) }
-pub fn pubdef(orec: ObjectRecord) { tmp(orec) }
+
+pub fn pubdef(orec: ObjectRecord) {
+    println!("External Names Definition Record (EXTDEF)");
+    println!("=========================================");
+
+    let base_group_index = orec.data[0];
+    println!("Base group index: {}", base_group_index);
+
+    let base_segment_index = orec.data[1];
+    println!("Base segment index: {}", base_segment_index);
+
+    let i;
+    if base_segment_index == 0 {
+        let base_frame = (orec.data[2] as u32) + 256*(orec.data[3] as u32);
+        println!("Base frame: {}", base_frame);
+        i = 4;
+    } else {
+        i = 2;
+    }
+
+    let mut p = &orec.data[i..];
+    while !p.is_empty() {
+        let length = p[0] as usize;
+        let name = str::from_utf8(&p[1..length+1]).unwrap();
+        let public_offset = (p[length+1] as u32) + 256*(p[length+2] as u32);
+        let type_index = p[length+3] as usize;
+        println!("Name: {}", name);
+        println!("Public offset: {}", public_offset);
+        if type_index > 0 {
+            println!("Type index: {}", type_index);
+        }
+        p = &p[length+4..];
+    }
+    println!();
+}
+
 pub fn linnum(orec: ObjectRecord) { tmp(orec) }
 
 pub fn lnames(orec: ObjectRecord) { 
