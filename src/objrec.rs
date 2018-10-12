@@ -46,7 +46,7 @@ fn const_to_type(num: u8) -> RecordType {
         0x9a => RecordType::GRPDEF,
         0x9c => RecordType::FIXUPP,
         0xa0 => RecordType::LEDATA,
-        n => panic!("bad record type: {:02X}H", n)
+        n => panic!("Bad record type: {:02X}H", n)
     }
 }
 
