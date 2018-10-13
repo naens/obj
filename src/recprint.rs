@@ -16,7 +16,55 @@ pub fn theadr(orec: ObjectRecord) {
 }
 
 pub fn coment(orec: ObjectRecord) { tmp(orec) }
-pub fn modend(orec: ObjectRecord) { tmp(orec) }
+
+pub fn modend(orec: ObjectRecord) {
+    println!("Module End Record (MODEND)");
+    println!("==========================");
+
+    let module_type = orec.data[0];
+    if module_type & 0x80 != 0 {
+        println!("Main program module");
+    }
+    if module_type & 0x40 != 0 {
+        println!("Contains a start address");
+        if module_type & 1 == 1 {
+            println!("Start address contains a relocatable address reference");
+        }
+        let end_data = orec.data[1];
+        let mut i = 2;
+        print!("\tFrame: ");
+        if end_data & 0x80 != 0 {	/* frame specified explicitly */
+            let frame_thread = (end_data >> 4) & 7;
+            print!("thread={} ", frame_thread);
+        } else {			/* frame in thread */
+            let frame_method = (end_data >> 4) & 7;
+            print!("method={} ", frame_method);
+            if frame_method != 5 {
+                let frame_datum = orec.data[i];
+                print!(", datum={}", frame_datum);
+                i = i + 1;
+            }
+        }
+        println!();
+        print!("\tTarget: ");
+        if end_data & 0x08 != 0 {	/* target specified explicitly */
+            let target_thread = end_data & 3;
+            print!("thread={}", target_thread);
+        } else {			/* target in thread */
+            let target_datum = orec.data[i];
+            print!("datum={}, ", target_datum);
+            i = i + 1;
+            let target_method = end_data & 7;
+            print!("method={} ", target_method);
+            if target_method < 3 {
+                let target_displacement = (orec.data[i] as u32)
+                        + 256*(orec.data[i+1] as u32);
+                print!("displacement={}", target_displacement);
+            }
+        }
+    }
+    println!();
+}
 
 pub fn extdef(orec: ObjectRecord) {
     println!("External Names Definition Record (EXTDEF)");
