@@ -2,7 +2,20 @@ use std::str;
 
 use ::objrec::*;
 
-pub fn regint(orec: ObjectRecord) { tmp(orec) }
+pub fn regint(orec: ObjectRecord) {
+    println!("Register Initialization Record (REGINT)");
+    println!("=======================================");
+//    let mut i = 0;
+//    while i < orec.data.len() {
+        let regid = orec.data[0] >> 6;
+        let l = orec.data[0] & 1;
+        println!("regid={}, l={}", regid, l);
+        /* TODO: fixdat, enddat, regdat function (fixupp, modend, regint) */
+//        i = i + ...;
+//    }
+    println!();
+}
+
 pub fn blkdef(orec: ObjectRecord) { tmp(orec) }
 pub fn blkend(orec: ObjectRecord) { tmp(orec) }
 pub fn debsym(orec: ObjectRecord) { tmp(orec) }
@@ -32,6 +45,7 @@ pub fn modend(orec: ObjectRecord) {
         }
         let end_data = orec.data[1];
         let mut i = 2;
+        /* TODO: separate regdat/enddat/fixdat function */
         print!("\tFrame: ");
         if end_data & 0x80 != 0 {	/* frame specified explicitly */
             let frame_thread = (end_data >> 4) & 7;
@@ -243,6 +257,7 @@ pub fn fixupp(orec: ObjectRecord) {
             let fixdat = orec.data[i+2];
             i = i + 3;
             let f = fixdat >> 7;
+            /* fixdat: separate function */
             print!("\tFrame: ");
             if f == 1 {
                 let frame_thread = (fixdat >> 4) & 7;
