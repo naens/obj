@@ -172,7 +172,76 @@ pub fn segdef(orec: ObjectRecord) {
 }
 
 pub fn grpdef(orec: ObjectRecord) { tmp(orec) }
-pub fn fixupp(orec: ObjectRecord) { tmp(orec) }
+
+pub fn fixupp(orec: ObjectRecord) {
+    println!("Fixup Record (FIXUPP)");
+    println!("=====================");
+
+    let mut i = 0;
+    while i < orec.data.len() {
+        if orec.data[i] & 0x80 != 0 {	/* fixup field */
+            print!("Fixup field: ");
+            let locat = (orec.data[i+1] as u32) + 256*(orec.data[i] as u32);
+            let m = (locat >>14 ) & 1;
+            let loc = (locat >> 10) & 7;
+            let data = locat & 0x3ff;
+            if m == 1 {
+                print!("segment-relative, ");
+            } else {
+                print!("self-relative, ");
+            }
+            println!("loc={}, data={:03x}", loc, data);
+
+            let fixdat = orec.data[i+2];
+            i = i + 3;
+            let f = fixdat >> 7;
+            print!("\tFrame: ");
+            if f == 1 {
+                let frame_thread = (fixdat >> 4) & 7;
+                print!("thread={} ", frame_thread);
+            } else {
+                let frame_method = (fixdat >> 4) & 7;
+                print!("method={} ", frame_method);
+                if frame_method != 5 {
+                    let frame_datum = orec.data[i];
+                    print!(", datum={}", frame_datum);
+                    i = i + 1;
+                }
+            }
+            println!();
+            print!("\tTarget: ");
+            let t = (fixdat >> 3) & 1;
+            if t == 1 {
+                let target_thread = fixdat & 3;
+                print!("thread={}", target_thread);
+            } else {
+                let target_datum = orec.data[i];
+                print!("datum={}, ", target_datum);
+                i = i + 1;
+                let target_method = fixdat & 7;
+                print!("method={} ", target_method);
+                if target_method < 3 {
+                    let target_displacement = (orec.data[i] as u32)
+                            + 256*(orec.data[i+1] as u32);
+                    print!("displacement={}", target_displacement);
+                    i = i + 2;
+                }
+            }
+            println!();
+        } else {		/* thread field */
+            let data = orec.data[i];
+            let number = data & 3;
+            let method = (data >> 2) & 7;
+            let d = match data >> 6 { 1 => "frame", _ => "target" };
+            let index = orec.data[i+1];
+            println!("Thread field: {} thread: {}, method: {}, index: {}",
+                d, number, method, index);
+            i = i + 2;
+        }
+    }
+    
+    println!();
+}
 
 pub fn ledata(orec: ObjectRecord) {
     println!("Logical Enumerated Data Record (LEDATA)");
