@@ -40,8 +40,8 @@ pub fn extdef(orec: ObjectRecord) {
 pub fn typdef(orec: ObjectRecord) { tmp(orec) }
 
 pub fn pubdef(orec: ObjectRecord) {
-    println!("External Names Definition Record (EXTDEF)");
-    println!("=========================================");
+    println!("Public Names Definition Record (PUBDEF)");
+    println!("=======================================");
 
     let base_group_index = orec.data[0];
     println!("Base group index: {}", base_group_index);
@@ -64,17 +64,35 @@ pub fn pubdef(orec: ObjectRecord) {
         let name = str::from_utf8(&p[1..length+1]).unwrap();
         let public_offset = (p[length+1] as u32) + 256*(p[length+2] as u32);
         let type_index = p[length+3] as usize;
-        println!("Name: {}", name);
-        println!("Public offset: {}", public_offset);
+        print!("Name: {}, public offset: {}", name, public_offset);
         if type_index > 0 {
-            println!("Type index: {}", type_index);
+            print!(", type index: {}", type_index);
         }
+        println!();
         p = &p[length+4..];
     }
     println!();
 }
 
-pub fn linnum(orec: ObjectRecord) { tmp(orec) }
+pub fn linnum(orec: ObjectRecord) {
+    println!("Line Numbers Record (LINNUM)");
+    println!("===========================");
+
+    let base_group_index = orec.data[0];
+    println!("Base group index: {}", base_group_index);
+
+    let base_segment_index = orec.data[1];
+    println!("Base segment index: {}", base_segment_index);
+
+    let mut i = 2;
+    while i < orec.data.len() {
+        let line = (orec.data[i] as u32) + 256 * (orec.data[i+1] as u32);
+        let offset = (orec.data[i+2] as u32) + 256 * (orec.data[i+3] as u32);
+        println!("Line: {}, offset: {}", line, offset);
+        i = i + 4;
+    }
+    println!();
+}
 
 pub fn lnames(orec: ObjectRecord) { 
     println!("List of Names Record (LNAMES)");
@@ -155,7 +173,29 @@ pub fn segdef(orec: ObjectRecord) {
 
 pub fn grpdef(orec: ObjectRecord) { tmp(orec) }
 pub fn fixupp(orec: ObjectRecord) { tmp(orec) }
-pub fn ledata(orec: ObjectRecord) { tmp(orec) }
+
+pub fn ledata(orec: ObjectRecord) {
+    println!("Logical Enumerated Data Record (LEDATA)");
+    println!("=======================================");
+
+    let segment_index = orec.data[0];
+    println!("Segment index: {}", segment_index);
+
+    let data_offset = (orec.data[1] as u32) + 256*(orec.data[2] as u32);
+    println!("Enumerated data offset: {}", data_offset);
+
+    let mut i = 0;
+    print!("Data: ");
+    while i+3 < orec.data.len() {
+        if i > 0 && i % 16 == 0 {
+            print!("\n      ");
+        }
+        print!(" {:02x}", orec.data[i+3]);
+        i = i + 1;
+    }
+    println!();
+    println!();
+}
 
 pub fn tmp(orec: ObjectRecord) {
     print!("record type: {:?}, ", orec.rtype);
