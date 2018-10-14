@@ -36,10 +36,10 @@ fn print_dat(vec: &[u8]) -> usize {
         print!("datum={}, ", target_datum);
         i = i + 1;
         let target_method = dat & 7;
-        print!("method={} ", target_method);
+        print!("method={}", target_method);
         if target_method < 3 {
             let target_displacement = read_u16(&vec[i..]);
-            print!("displacement={}", target_displacement);
+            print!(", displacement={}", target_displacement);
             i = i + 2;
         }
     }
@@ -47,22 +47,42 @@ fn print_dat(vec: &[u8]) -> usize {
     return i;
 }
 
+/* prints the local symbols base and returns the number obytes read */
+fn print_loc_sym_base(vec: &[u8]) -> usize {
+    let group_index = vec[0];
+    let segment_index = vec[1];
+    if segment_index > 0 {
+        println!("Group index: {}, segment index: {}",
+                group_index, segment_index);
+        return 2;
+    } else {
+        let frame_number = read_u16(&vec[2..]);
+        println!("Group index: {}, segment index: {}, frame number: {}",
+                group_index, segment_index, frame_number);
+        return 4;
+    }
+}
+
 pub fn regint(orec: ObjectRecord) {
     println!("Register Initialization Record (REGINT)");
     println!("=======================================");
     let mut i = 0;
     while i < orec.data.len() {
-        println!("regtyp={:02x}", orec.data[i]);
+        print!("regtyp={:02x}, ", orec.data[i]);
         let regid = orec.data[0] >> 6;
         i = i + 1;
         let l = orec.data[0] & 1;
-        println!("regid={}, l={}", regid, l);
+        print!("regid={}, l={}, ", regid, l);
         if l == 1 {
             println!("regdat={:02x}", orec.data[i]);
             i = i + print_dat(&orec.data[i..]);
-            println!("i={}", i);
         } else {
-            panic!("regint, l=0: not implemented");
+            i = i + print_loc_sym_base(&orec.data[i..]);
+            if regid <= 1 {
+                let reg_offs = read_u16(&orec.data[i..]);
+                print!("register offset: {}", reg_offs);
+            }
+            println!();
         }
     }
     println!();
@@ -70,7 +90,34 @@ pub fn regint(orec: ObjectRecord) {
 
 pub fn blkdef(orec: ObjectRecord) { tmp(orec) }
 pub fn blkend(orec: ObjectRecord) { tmp(orec) }
-pub fn debsym(orec: ObjectRecord) { tmp(orec) }
+
+pub fn debsym(orec: ObjectRecord) {
+    println!("Debug Symbols Record (DEBSYM)");
+    println!("=============================");
+
+    let frame_info = orec.data[0];
+    let based = frame_info >> 7;
+    let long = (frame_info >> 6) & 1;
+    let meth = frame_info & 7;
+    println!("Based: {}, long: {}, method: {}", based, long, meth);
+    if meth != 0 {
+        panic!("method not 0, unimplemented");
+    }
+
+    let mut i = 1 + print_loc_sym_base(&orec.data[1..]);
+
+    while i < orec.data.len() {
+        let name_len = orec.data[i] as usize;
+        let name = str::from_utf8(&orec.data[i+1..i+1+name_len]).unwrap();
+        i = i + 1 + name_len;
+        let offset = read_u16(&orec.data[i..]);
+        let type_index = orec.data[i+2];
+        println!("Name: {}, offset: {}, type index: {}",
+                name, offset, type_index);
+        i = i + 3;
+    }
+    println!();
+}
 
 pub fn theadr(orec: ObjectRecord) {
     let name = str::from_utf8(&orec.data[1..]).unwrap();
@@ -253,7 +300,28 @@ pub fn segdef(orec: ObjectRecord) {
     println!();
 }
 
-pub fn grpdef(orec: ObjectRecord) { tmp(orec) }
+pub fn grpdef(orec: ObjectRecord) {
+    println!("Group Definition Record (GRPDEF)");
+    println!("================================");
+
+    let group_name_index = orec.data[0];
+    println!("Group name index: {}", group_name_index);
+
+    let mut i = 1;
+    while i < orec.data.len() {
+        let typstr = match orec.data[i] {
+            0xff => "Segment index",
+            0xfe => "Name index",
+            0xfb => "Group length",
+            0xfa => "Frame number/offset",
+            _ => "?????"
+        };
+        println!("{}: {}", typstr, orec.data[i+1]);
+        i = i + 2;
+    }
+
+    println!();
+}
 
 pub fn fixupp(orec: ObjectRecord) {
     println!("Fixup Record (FIXUPP)");
