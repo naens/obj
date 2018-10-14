@@ -6,6 +6,8 @@ pub mod recprint;
 
 pub mod objrec;
 
+pub mod typdef;
+
 fn main() {
     /* get arguments */
     let args: Vec<String> = env::args().collect();

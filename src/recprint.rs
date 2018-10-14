@@ -1,6 +1,7 @@
 use std::str;
 
 use ::objrec::*;
+use ::typdef::*;
 
 fn read_u16(vec: &[u8]) -> u16 {
     (vec[0] as u16) + 0x100 * (vec[1] as u16)
@@ -105,11 +106,21 @@ pub fn debsym(orec: ObjectRecord) {
     let long = (frame_info >> 6) & 1;
     let meth = frame_info & 7;
     println!("Based: {}, long: {}, method: {}", based, long, meth);
-    if meth != 0 {
-        panic!("method not 0, unimplemented");
-    }
 
-    let mut i = 1 + print_loc_sym_base(&orec.data[1..]);
+    let mut i = match meth {
+        0 => 1 + print_loc_sym_base(&orec.data[1..]),
+        1 => {
+            let ext_index = orec.data[1];
+            println!("External index: {}", ext_index);
+            2
+        },
+        2 => {
+            let block_index = orec.data[1];
+            println!("Block index: {}", block_index);
+            2
+        },
+        _ => panic!("illegal method")
+    };
 
     while i < orec.data.len() {
         let name_len = orec.data[i] as usize;
@@ -171,7 +182,13 @@ pub fn extdef(orec: ObjectRecord) {
     println!();
 }
 
-pub fn typdef(orec: ObjectRecord) { tmp(orec) }
+pub fn typdef(orec: ObjectRecord) {
+    println!("Type Definition Record (TYPDEF)");
+    println!("================================");
+    let type_string = typdef_to_string(&orec.data[1..]);
+    println!("Type: {}", type_string);
+    println!();
+}
 
 pub fn pubdef(orec: ObjectRecord) {
     println!("Public Names Definition Record (PUBDEF)");
