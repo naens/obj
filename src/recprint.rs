@@ -89,7 +89,53 @@ pub fn regint(orec: ObjectRecord) {
     println!();
 }
 
-pub fn blkdef(orec: ObjectRecord) { tmp(orec) }
+pub fn blkdef(orec: ObjectRecord) {
+    println!("Block Definition Record (BLKDEF)");
+    println!("================================");
+
+    /* block base */
+    let mut i = print_loc_sym_base(&orec.data[0..]);
+
+    /* block information */
+    let name_len = orec.data[i] as usize;
+    if name_len != 0 {
+        let name = str::from_utf8(&orec.data[i+1..i+1+name_len]).unwrap();
+        println!("Name: {}", name);
+        i = i + name_len + 1;
+    }
+
+    let block_offset = read_u16(&orec.data[i..]);
+    println!("Block offset: {}", block_offset);
+    i = i + 2;
+
+    let block_length = read_u16(&orec.data[i..]);
+    println!("Block length: {}", block_length);
+    i = i + 2;
+
+    /* procedure information */
+    let p = orec.data[i] >> 7;
+    i = i + 1;
+    if p == 1 {		/* there is a return address offset */
+        let l = (orec.data[i] >> 6) & 1;
+        let word1 = read_u16(&orec.data[i..]);
+        if l == 0 {	/* 2-byte return address */
+            println!("Return address: {}", word1);
+            i = i + 2;
+        } else {	/* 4-byte return address */
+            let word2 = read_u16(&orec.data[i+2..]);
+            println!("Return address: {}:{}", word1, word2);
+            i = i + 4;
+        }
+    }
+
+    /* type index */
+    if name_len > 0 {
+        let type_index = orec.data[i];
+        println!("Type index: {}", type_index);
+    }
+
+    println!();
+}
 
 pub fn blkend(_orec: ObjectRecord) {
     println!("Block End Record (BLKEND)");
@@ -185,7 +231,13 @@ pub fn extdef(orec: ObjectRecord) {
 pub fn typdef(orec: ObjectRecord) {
     println!("Type Definition Record (TYPDEF)");
     println!("================================");
-    let type_string = typdef_to_string(&orec.data[1..]);
+    let name_len = orec.data[0] as usize;
+    if name_len != 0 {
+        let name = str::from_utf8(&orec.data[1..name_len+1]).unwrap();
+        println!("Name: {}", name);
+    }
+    let i = name_len + 1;
+    let type_string = typdef_to_string(&orec.data[i..]);
     println!("Type: {}", type_string);
     println!();
 }
