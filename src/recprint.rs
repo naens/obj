@@ -89,7 +89,12 @@ pub fn regint(orec: ObjectRecord) {
 }
 
 pub fn blkdef(orec: ObjectRecord) { tmp(orec) }
-pub fn blkend(orec: ObjectRecord) { tmp(orec) }
+
+pub fn blkend(_orec: ObjectRecord) {
+    println!("Block End Record (BLKEND)");
+    println!("=============================");
+    println!();
+}
 
 pub fn debsym(orec: ObjectRecord) {
     println!("Debug Symbols Record (DEBSYM)");
