@@ -185,11 +185,74 @@ pub fn theadr(orec: ObjectRecord) {
     let name = str::from_utf8(&orec.data[1..]).unwrap();
     println!("Translator Header Record (THEADR)");
     println!("=================================");
-    println!("Object Module Name: {}", name);
+    println!("Object module name: {}", name);
     println!();
 }
 
-pub fn coment(orec: ObjectRecord) { tmp(orec) }
+fn print_com_typ(vec: &[u8]) {
+    println!("Comment type: typedef");
+    let t = read_u16(&vec[0..]);
+    println!("Type: {}", t);
+    let s = read_u16(&vec[2..]);
+    println!("Size: {}", s);
+    let a = vec[4];
+    println!("Absolute type: {}", a);
+    if vec.len() > 5 {
+        print!("Other bytes:");
+        for x in &vec[5..] {
+            print!(" {:02x}", x);
+        }
+        println!();
+    }
+}
+
+fn print_com_sym(vec: &[u8]) {
+    let mut i = 0;
+    while i < vec.len() {
+        let len = vec[i] as usize;
+        let s = str::from_utf8(&vec[i+1..i+1+len]).unwrap();
+        i = i + 1 + len;
+        let t = read_u16(&vec[i..]); 
+        let g = vec[i+2];
+        let seg = vec[i+3];
+        let o = read_u16(&vec[i+4..]);
+        println!("{}: type:{}, group:{}, segment:{}, offset:{:04x}",
+            s, t, g, seg, o);
+        i = i + 6;
+    }
+}
+
+pub fn coment(orec: ObjectRecord) {
+    println!("Comment Record (COMENT)");
+    println!("=======================");
+
+    let np = (orec.data[0] & 0x80) != 0;
+    let nl = (orec.data[0] & 0x40) != 0;
+    println!("No purge: {}\nNo list: {}", np, nl);
+
+    let comment_type = orec.data[1];
+    match comment_type {
+        0x00 | 0x80 => {
+            let mut i = 2; 
+            while orec.data[i] < 0x20 { i = i + 1 } /* unprintable characters */
+            println!("Comment type: translator\n{}",
+            str::from_utf8(&orec.data[i..]).unwrap())},
+        0xa1 => println!("Comment type: extended"),
+        0xa2 => println!("Comment type: linkpass: {}",
+                    orec.data[2]),
+        0xea => println!("Comment type: compdef: {}-{}",
+                    orec.data[2], orec.data[3]),
+        0xe3 => print_com_typ(&orec.data[2..]),
+        0xe8 => {
+            let len = orec.data[3] as usize;
+            println!("Comment type: filname ({})",
+                    str::from_utf8(&orec.data[4..4+len]).unwrap())},
+        0xe6 => print_com_sym(&orec.data[2..]),
+        _ => println!("Unknown comment type")
+    }
+    println!();
+
+}
 
 pub fn modend(orec: ObjectRecord) {
     println!("Module End Record (MODEND)");
