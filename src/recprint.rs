@@ -192,7 +192,7 @@ pub fn theadr(orec: ObjectRecord) {
 fn print_com_typ(vec: &[u8]) {
     println!("Comment type: typedef");
     let t = read_u16(&vec[0..]);
-    println!("Type: {}", t);
+    println!("Type: {} (0x{:04x})", t, t);
     let s = read_u16(&vec[2..]);
     println!("Size: {}", s);
     let a = vec[4];
@@ -216,8 +216,8 @@ fn print_com_sym(vec: &[u8]) {
         let g = vec[i+2];
         let seg = vec[i+3];
         let o = read_u16(&vec[i+4..]);
-        println!("{}: type:{}, group:{}, segment:{}, offset:{:04x}",
-            s, t, g, seg, o);
+        println!("{}: type:{}(0x{:04x}), group:{}, segment:{}, offset:{:04x}",
+            s, t, t, g, seg, o);
         i = i + 6;
     }
 }
